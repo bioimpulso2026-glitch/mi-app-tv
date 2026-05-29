@@ -5,256 +5,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TV Argentina Móvil</title>
     <style>
-        /* Estilos Base y Reset */
-        * { 
-            box-sizing: border-box; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            margin: 0; 
-            padding: 0; 
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        body { 
-            background-color: #0d0d0d; 
-            color: #ffffff; 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-            overflow: hidden; 
-        }
-
-        /* 1. SECCIÓN REPRODUCTOR (Fijo arriba en celulares) */
-        #player-container { 
-            width: 100%; 
-            aspect-ratio: 16 / 9; /* Mantiene la proporción perfecta de TV */
-            background-color: #000000; 
-            position: relative;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-            z-index: 10;
-        }
-        
-        #video-wrapper { 
-            width: 100%; 
-            height: 100%; 
-        }
-        
-        iframe { 
-            width: 100%; 
-            height: 100%; 
-            border: none; 
-        }
-
-        /* Indicador de Canal Actual debajo del video */
-        #current-title { 
-            padding: 12px 16px; 
-            font-size: 1rem; 
-            font-weight: 600;
-            background: linear-gradient(to bottom, #161616, #0d0d0d);
-            border-bottom: 1px solid #222;
-            color: #00adb5;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-        }
-
-        /* 2. SECCIÓN CONTENIDO (Lista de canales abajo) */
-        #content-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        #header-title { 
-            padding: 15px 16px 5px 16px; 
-            font-size: 0.85rem; 
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: #888; 
-            font-weight: 700; 
-        }
-        
-        #channel-list { 
-            flex: 1; 
-            overflow-y: auto; 
-            list-style: none; 
-            padding: 10px 16px 20px 16px;
-        }
-
-        /* Diseño de cada fila de canal (Estilo tarjeta moderna) */
-        .channel-item { 
-            display: flex; 
-            align-items: center; 
-            padding: 12px 14px; 
-            cursor: pointer; 
-            background-color: #1a1a1a;
-            border-radius: 12px;
-            margin-bottom: 10px;
-            border: 1px solid #252525;
-            transition: all 0.2s ease;
-        }
-        
-        .channel-item:active { 
-            transform: scale(0.98);
-            background-color: #252525;
-        }
-        
-        /* Canal Activo/Seleccionado */
-        .channel-item.active { 
-            background: linear-gradient(135deg, #00adb5 0%, #007c82 100%);
-            border-color: #00adb5;
-            box-shadow: 0 4px 12px rgba(0, 173, 181, 0.3);
-        }
-        
-        .channel-item.active span {
-            color: #000000;
-            font-weight: 700;
-        }
-
-        /* Logos de los canales */
-        .channel-item img { 
-            width: 42px; 
-            height: 42px; 
-            object-fit: contain; 
-            margin-right: 16px; 
-            border-radius: 8px; 
-            background: #ffffff; 
-            padding: 4px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-        
-        .channel-item span { 
-            font-size: 1.05rem; 
-            color: #ffffff;
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-
-        /* Optimización estética de la barra de scroll */
-        #channel-list::-webkit-scrollbar {
-            width: 4px;
-        }
-        #channel-list::-webkit-scrollbar-thumb {
-            background-color: #333;
-            border-radius: 10px;
-        }
+        * { box-sizing: border-box; font-family: sans-serif; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #0d0d0d; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        #player-container { width: 100%; aspect-ratio: 16 / 9; background: #000; position: relative; }
+        iframe { width: 100%; height: 100%; border: none; }
+        #current-title { padding: 15px; background: #1a1a1a; color: #00adb5; font-weight: bold; font-size: 1rem; border-bottom: 1px solid #252525; }
+        #channel-list { flex: 1; overflow-y: auto; padding: 10px; list-style: none; }
+        .channel-item { display: flex; align-items: center; padding: 12px; background: #1a1a1a; border-radius: 12px; margin-bottom: 10px; cursor: pointer; border: 1px solid #252525; }
+        .channel-item.active { background: #252525; border-color: #00adb5; }
+        .channel-item img { width: 42px; height: 42px; margin-right: 15px; border-radius: 8px; background: #fff; padding: 4px; object-fit: contain; }
     </style>
 </head>
 <body>
 
-    <div id="player-container">
-        <div id="video-wrapper">
-            <div id="yt-player"></div>
-        </div>
-    </div>
-    
-    <div id="current-title">Cargando canales...</div>
+    <div id="player-container"><div id="yt-player"></div></div>
+    <div id="current-title">Selecciona un canal</div>
+    <ul id="channel-list"></ul>
 
-    <div id="content-section">
-        <div id="header-title">Canales en Vivo 🇦🇷</div>
-        <ul id="channel-list">
-            </ul>
-    </div>
-
+    <script src="https://www.youtube.com/iframe_api"></script>
     <script>
-        // Lista optimizada de canales y sus respectivos IDs estables de transmisión
+        // IDs largos de canal (empiezan con UC)
         const channels = [
             { name: "TN (Todo Noticias)", ytId: "j6PcyLvpnIRT_2W_mwa9Aw", logo: "https://upload.wikimedia.org/wikipedia/commons/e/e6/Todo_Noticias_2023.png" },
             { name: "C5N", ytId: "O954bZ_wshw", logo: "https://upload.wikimedia.org/wikipedia/commons/c/c5/C5N_logo_2023.png" },
-            { name: "El Nueve", ytId: "ElNueveArgentina", logo: "https://upload.wikimedia.org/wikipedia/commons/6/6f/El_Nueve_Logo_2021.png" },
-            { name: "A24", ytId: "UCR9120YBAqMfntqgRTKmkjQ", logo: "https://upload.wikimedia.org/wikipedia/commons/c/c8/A24_logo_2021.png" },
             { name: "América TV", ytId: "UC9mXvHw8Scl_b4K6wXw9W4A", logo: "https://upload.wikimedia.org/wikipedia/commons/e/ec/Am%C3%A9rica_Televisi%C3%B3n_logo_2021.png" },
             { name: "Canal 26", ytId: "UCO6uA5Xg0Gidb_p2u05H5fA", logo: "https://upload.wikimedia.org/wikipedia/commons/f/f3/Canal_26_logo_2021.png" },
             { name: "LN+ (La Nación)", ytId: "UC8m7_V8YShH1086g_v6yS3A", logo: "https://upload.wikimedia.org/wikipedia/commons/d/df/LN%2B_logo_2021.png" }
         ];
 
-        const channelList = document.getElementById('channel-list');
-        const currentTitle = document.getElementById('current-title');
         let player = null;
 
-        // Inyectamos la API de forma asíncrona asegurando HTTPS estricto
-        const tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        const firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-        // Se ejecuta automáticamente al cargar la API
         function onYouTubeIframeAPIReady() {
-            renderChannels();
-            if(channels.length > 0) {
-                // Pequeño tiempo de espera para que Android/iOS procesen la carga inicial del DOM
-                setTimeout(() => {
-                    const firstItem = document.getElementsByClassName('channel-item')[0];
-                    playChannel(channels[0].ytId, channels[0].name, firstItem);
-                }, 400);
-            }
-        }
-
-        // Construir la botonera táctil de canales
-        function renderChannels() {
-            channelList.innerHTML = ''; 
-            channels.forEach((channel) => {
+            const list = document.getElementById('channel-list');
+            channels.forEach(ch => {
                 const li = document.createElement('li');
                 li.className = 'channel-item';
-                li.innerHTML = `
-                    <img src="${channel.logo}" onerror="this.src='https://via.placeholder.com/42?text=TV'">
-                    <span>${channel.name}</span>
-                `;
-                // Usamos una función puente para pasar los parámetros correctamente
-                li.onclick = () => playChannel(channel.ytId, channel.name, li);
-                channelList.appendChild(li);
+                li.innerHTML = `<img src="${ch.logo}"><span>${ch.name}</span>`;
+                li.onclick = () => loadChannel(ch, li);
+                list.appendChild(li);
             });
         }
 
-        // Cambiar y reproducir el canal seleccionado
-        function playChannel(id, name, element) {
-            currentTitle.innerText = `${name}`;
-            
-            // Gestionar estados activos visuales
+        function loadChannel(ch, element) {
+            document.getElementById('current-title').innerText = ch.name;
             document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
-            if(element) element.classList.add('active');
+            element.classList.add('active');
 
-            let videoIdParam = id;
-            let liveSourceType = "id";
-            
-            // Detectar si pasamos un ID de Canal de YouTube (empiezan con UC) en lugar de un ID de video directo
-            if (id.startsWith('UC') || id.length > 15) {
-                liveSourceType = "live_channel";
-            }
-
-            // Reset total del reproductor para WebViews móviles (evita congelamientos de video)
             if (player) {
-                try { player.destroy(); } catch(e) {}
-                player = null;
-                document.getElementById('video-wrapper').innerHTML = '<div id="yt-player"></div>';
-            }
-
-            // Parámetros obligatorios para saltar restricciones en Apps/Celulares
-            const playerVarsOptions = {
-                'autoplay': 1,
-                'controls': 1,
-                'rel': 0,
-                'modestbranding': 1,
-                'playsinline': 1, // CRITICAL: Permite reproducir dentro de la app sin forzar pantalla completa nativa de iOS
-                'origin': window.location.origin || '*'
-            };
-
-            if (liveSourceType === "live_channel") {
-                playerVarsOptions.listType = 'live_channel';
-                playerVarsOptions.list = id;
-            }
-
-            // Inicializar el nuevo iframe de YouTube
-            player = new YT.Player('yt-player', {
-                width: '100%',
-                height: '100%',
-                videoId: liveSourceType === "id" ? videoIdParam : null,
-                playerVars: playerVarsOptions,
-                events: {
-                    'onReady': (event) => {
-                        // Forzar el play automático tras la carga en móviles
-                        event.target.playVideo();
+                player.loadVideoByUrl({
+                    'mediaContentReference': ch.ytId,
+                    'listType': 'live_channel',
+                    'list': ch.ytId
+                });
+            } else {
+                player = new YT.Player('yt-player', {
+                    playerVars: { 
+                        'autoplay': 1, 
+                        'playsinline': 1, 
+                        'origin': '*',
+                        'listType': 'live_channel',
+                        'list': ch.ytId
                     }
-                }
-            });
+                });
+            }
         }
     </script>
 </body>
